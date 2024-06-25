@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "ResearchKit",
     platforms: [
-        .iOS(.v17),
+        .iOS(.v15),
         .visionOS(.v1)
     ],
     products: [
