@@ -1,39 +1,26 @@
-#
-# This source file is part of the Stanford Biodesign Digital Health Group open-source organization
-#
-# SPDX-FileCopyrightText: 2022 Stanford University and the project authors (see CONTRIBUTORS.md)
-#
-# SPDX-License-Identifier: MIT
-#
-
-name: Build XCArchive
+name: Build
 
 on:
+  push:
+    branches: [ 'main', 'stable' ]
   pull_request:
-  workflow_dispatch:
-  workflow_call:
-    inputs:
-      version:
-        description: 'The version number of the framework embedded in the XCArchives.'
-        type: string
-        required: true
+    branches: [ 'main', 'stable' ]
 
-jobs:
-  build-xcarchive:
-    uses: StanfordBDHG/.github/.github/workflows/archive.yml@v2
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:        
+  test:
+    runs-on: macos-14
     strategy:
       matrix:
-        include:
-          - configuration: Release
-            cxxInterop: false
-          - configuration: Debug  # It's only possible to build ResearchKit with enabled C++ interop in Debug configuration
-            cxxInterop: true
-    with:
-      workspaceFile: RKWorkspace.xcworkspace
-      xcArchiveName: ResearchKit
-      scheme: ResearchKit
-      version: ${{ inputs.version }}
-      configuration: ${{ matrix.configuration }}
-      cxxInterop: ${{ matrix.cxxInterop }}
-      sdk: '["iphoneos", "iphonesimulator", "xros", "xrsimulator"]'
-      runsonlabels: '["macOS", "self-hosted"]'
+        destination: ['platform=iOS\ Simulator,OS=17.4,name=iPhone\ 15\ Pro']
+        scheme: ['ResearchKit']
+    name: ${{ matrix.scheme }} Unit Tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.3.app
+      - name: Test
+        run: set -o pipefail && env NSUnbufferedIO=YES xcodebuild -verbose -workspace RKWorkspace.xcworkspace -scheme ${{ matrix.scheme }} -destination ${{ matrix.destination }} build test | xcpretty
